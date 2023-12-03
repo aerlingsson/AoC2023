@@ -34,7 +34,7 @@ let sumOfCalibrationValues (lines: string seq) =
   |> Seq.map (fun x -> 
     let digits = x |> String.filter Char.IsDigit
     let first, last = Seq.head digits, Seq.last digits
-    $"{first}{last}" |> Int32.Parse
+    $"{first}{last}" |> int
   )
   |> Seq.sum
 
