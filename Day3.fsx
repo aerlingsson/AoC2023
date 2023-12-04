@@ -1,8 +1,8 @@
 open System
 open System.IO
 
-type CharPosition = { c: char; line: int; column: int}
-type Digit = { value: int; line: int; columns: int seq}
+type CharPosition = { C: char; Line: int; Column: int}
+type Digit = { Value: int; Line: int; Columns: int seq}
 
 let readLines() = File.ReadAllLines("Day3Input.txt")
 
@@ -12,7 +12,7 @@ let digitsAndSymbols (lineNumber: int) (line: string) =
   line
   |> Seq.indexed
   |> Seq.filter (fun (_, c) -> isSymbolOrDigit c)
-  |> Seq.map (fun (column, c) -> { c = c; line = lineNumber; column = column })
+  |> Seq.map (fun (column, c) -> { C = c; Line = lineNumber; Column = column })
 
 let charPositions (lines: string seq) =
   lines
@@ -25,9 +25,9 @@ let isAdjacentAny bs a = bs |> Seq.exists (fun b -> isAdjacent a b)
 let charPositionsToDigit (charPositions: CharPosition list) =
   let joinString (separator: string) (chars: char seq) = String.Join(separator, chars)
 
-  { value = charPositions |> Seq.rev |> Seq.map (fun c -> c.c) |> joinString "" |> int
-    line = charPositions |> Seq.head |> fun c -> c.line
-    columns = charPositions |> Seq.map (fun c -> c.column) |> Seq.rev }
+  { Value = charPositions |> Seq.rev |> Seq.map (fun c -> c.C) |> joinString "" |> int
+    Line = charPositions |> Seq.head |> fun c -> c.Line
+    Columns = charPositions |> Seq.map (fun c -> c.Column) |> Seq.rev }
 
 // This is slow as hell
 let buildDigits (created: Digit list, inProgress: CharPosition list, remaining: CharPosition seq) (digit: CharPosition) =
@@ -39,38 +39,38 @@ let buildDigits (created: Digit list, inProgress: CharPosition list, remaining: 
     match inProgress with
     | [] -> (created, [digit], remaining')
     | _ ->
-      if nextAfterDigit.line = digit.line && nextAfterDigit.column = digit.column + 1 then
+      if nextAfterDigit.Line = digit.Line && nextAfterDigit.Column = digit.Column + 1 then
         (created, nextAfterDigit :: inProgress, remaining')
       else
         (charPositionsToDigit inProgress :: created, [nextAfterDigit], remaining')
 
 let calcDigits (charPositions: CharPosition seq) =
   charPositions
-  |> Seq.filter (fun c -> Char.IsDigit c.c)
-  |> Seq.sortBy (fun c -> c.line, c.line)
+  |> Seq.filter (fun c -> Char.IsDigit c.C)
+  |> Seq.sortBy (fun c -> c.Line, c.Line)
   |> fun cs -> Seq.fold buildDigits ([], [Seq.head cs], cs) cs
   |> fun (created, _, _) -> created
 
 let part1() =
   let charPositions = readLines() |> charPositions
-  let symbols = charPositions |> Seq.filter (fun c -> not(Char.IsDigit c.c))
+  let symbols = charPositions |> Seq.filter (fun c -> not(Char.IsDigit c.C))
   let digits = calcDigits charPositions
 
   let isAdjacentToSymbol (symbols: CharPosition seq) (d: Digit) =
-    symbols |> Seq.exists (fun s -> isAdjacent d.line s.line && isAdjacentAny d.columns s.column)
+    symbols |> Seq.exists (fun s -> isAdjacent d.Line s.Line && isAdjacentAny d.Columns s.Column)
 
-  digits |> Seq.filter (isAdjacentToSymbol symbols) |> Seq.sumBy (fun d -> d.value)
+  digits |> Seq.filter (isAdjacentToSymbol symbols) |> Seq.sumBy (fun d -> d.Value)
 
 let part2() =
   let charPositions = readLines() |> charPositions
-  let gears = charPositions |> Seq.filter (fun c -> c.c = '*')
+  let gears = charPositions |> Seq.filter (fun c -> c.C = '*')
   let digits = calcDigits charPositions
 
   let adjacentDigits (digits: Digit seq) (gear: CharPosition) =
-    digits |> Seq.filter (fun d -> isAdjacent d.line gear.line && isAdjacentAny d.columns gear.column)
+   digits |> Seq.filter (fun d -> isAdjacent d.Line gear.Line && isAdjacentAny d.Columns gear.Column)
 
   gears
   |> Seq.map (adjacentDigits digits)
   |> Seq.filter (fun gearDigits -> Seq.length gearDigits = 2)
-  |> Seq.map (fun ds -> ds |> Seq.map (fun d -> d.value) |> Seq.reduce (*) )
+  |> Seq.map (fun ds -> ds |> Seq.map (fun d -> d.Value) |> Seq.reduce (*) )
   |> Seq.sum
