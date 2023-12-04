@@ -8,7 +8,7 @@ let readLines() = File.ReadAllLines("Day3Input.txt")
 
 let isSymbolOrDigit (c: char) = c <> '.'
 
-let DigitsAndSymbols (lineNumber: int) (line: string) =
+let digitsAndSymbols (lineNumber: int) (line: string) =
   line
   |> Seq.indexed
   |> Seq.filter (fun (_, c) -> isSymbolOrDigit c)
@@ -17,7 +17,7 @@ let DigitsAndSymbols (lineNumber: int) (line: string) =
 let charPositions (lines: string seq) =
   lines
   |> Seq.indexed
-  |> Seq.collect (fun (lineNumber, line) -> DigitsAndSymbols lineNumber line)
+  |> Seq.collect (fun (lineNumber, line) -> digitsAndSymbols lineNumber line)
 
 let isAdjacent a b = abs(a - b) <= 1
 let isAdjacentAny bs a = bs |> Seq.exists (fun b -> isAdjacent a b)
