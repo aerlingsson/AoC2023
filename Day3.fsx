@@ -29,7 +29,7 @@ let charPositionsToDigit (charPositions: CharPosition list) =
     Line = charPositions |> Seq.head |> fun c -> c.Line
     Columns = charPositions |> Seq.map (fun c -> c.Column) |> Seq.rev }
 
-// This is slow as hell
+// This is slow as hell - why?
 let buildDigits (created: Digit list, inProgress: CharPosition list, remaining: CharPosition seq) (digit: CharPosition) =
   if Seq.isEmpty remaining || Seq.isEmpty (Seq.tail remaining) then
     (charPositionsToDigit inProgress :: created, [], remaining)
