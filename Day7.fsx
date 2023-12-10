@@ -10,32 +10,42 @@ type HandType =
   | OnePair = 1
   | HighCard = 0
 
-type Hand = { Cards: int seq; Bid: int; handType: HandType }
+type Hand = { Cards: int seq; Bid: int; HandType: HandType }
 
 let readLines() = File.ReadAllLines("Day7Input.txt")
 
-let cardToInt (c: string) =
+let cardToInt (jsAreJokers: bool) (c: string) =
   match c with
   | "T" -> 10
-  | "J" -> 11
+  | "J" -> if jsAreJokers then 1 else 11
   | "Q" -> 12
   | "K" -> 13
   | "A" -> 14
   | _ -> int c
 
-let toHand (cards: int seq, bid: int) =
-  let cardCounts = Seq.countBy id cards
+let cardCounts (jsAreJokers: bool) (cards: int seq) =
+  if jsAreJokers then
+    let mostOf =
+      if cards |> Seq.exists (fun card -> card <> 1) then
+        cards |> Seq.filter (fun card -> card <> 1) |> Seq.countBy id |> Seq.maxBy (fun (value, count) -> (count, value)) |> fst
+      else cards |> Seq.countBy id |> Seq.maxBy (fun (value, count) -> (count, value)) |> fst
 
-  if Seq.exists (fun (_, count) -> count = 5) cardCounts then { Cards = cards; Bid = bid; handType = HandType.FiveOfAKind }
-  else if Seq.exists (fun (_, count) -> count = 4) cardCounts then { Cards = cards; Bid = bid; handType = HandType.FourOfAKind }
-  else if Seq.exists (fun (_, count) -> count = 3) cardCounts && Seq.exists (fun (_, count) -> count = 2) cardCounts then { Cards = cards; Bid = bid; handType = HandType.FullHouse }
-  else if Seq.exists (fun (_, count) -> count = 3) cardCounts then { Cards = cards; Bid = bid; handType = HandType.ThreeOfAKind }
+    cards
+    |> Seq.map (fun card -> if card = 1 then mostOf else card)
+    |> Seq.countBy id
+  else cards |> Seq.countBy id
+
+let toHand ((cardCounts: (int * int) seq), (cards: int seq, bid: int)) =
+  if Seq.exists (fun (_, count) -> count = 5) cardCounts then { Cards = cards; Bid = bid; HandType = HandType.FiveOfAKind }
+  else if Seq.exists (fun (_, count) -> count = 4) cardCounts then { Cards = cards; Bid = bid; HandType = HandType.FourOfAKind }
+  else if Seq.exists (fun (_, count) -> count = 3) cardCounts && Seq.exists (fun (_, count) -> count = 2) cardCounts then { Cards = cards; Bid = bid; HandType = HandType.FullHouse }
+  else if Seq.exists (fun (_, count) -> count = 3) cardCounts then { Cards = cards; Bid = bid; HandType = HandType.ThreeOfAKind }
   else
     let pairs = cardCounts |> Seq.filter (fun (_, count) -> count = 2) |> Seq.length
     match pairs with
-    | 2 -> { Cards = cards; Bid = bid; handType = HandType.TwoPair }
-    | 1 -> { Cards = cards; Bid = bid; handType = HandType.OnePair }
-    | _ -> { Cards = cards; Bid = bid; handType = HandType.HighCard }
+    | 2 -> { Cards = cards; Bid = bid; HandType = HandType.TwoPair }
+    | 1 -> { Cards = cards; Bid = bid; HandType = HandType.OnePair }
+    | _ -> { Cards = cards; Bid = bid; HandType = HandType.HighCard }
 
 let compareHand (a: int seq) (b: int seq) =
   let rec compare (x: int seq) (y: int seq) =
@@ -47,18 +57,32 @@ let compareHand (a: int seq) (b: int seq) =
 
   compare a b
 
-let part1() =
-  readLines()
-  |> Seq.map (fun line -> line.Split(" "))
-  |> Seq.map (fun words -> words[0].ToCharArray() |> Seq.map Char.ToString, int words.[1])
-  |> Seq.map (fun (cards, bid) -> cards |> Seq.map cardToInt, bid)
-  |> Seq.map toHand
-  |> Seq.sortWith (fun a b -> 
-    match a.handType, b.handType with
-    | x, y when x = y -> compareHand a.Cards b.Cards
-    | x, y when x > y -> 1
-    | x, y when x < y -> -1
-    | _ -> 0
-  )
+let sort (a: Hand) (b: Hand) =
+  match a.HandType, b.HandType with
+  | x, y when x = y -> compareHand a.Cards b.Cards
+  | x, y when x > y -> 1
+  | x, y when x < y -> -1
+  | _ -> 0
+
+let parseLine (jsAreJokers: bool) (line: string) =
+  line.Split(" ")
+  |> fun words -> words[0].ToCharArray() |> Seq.map Char.ToString, int words.[1]
+  |> fun (cards, bid) -> cards |> Seq.map (cardToInt jsAreJokers), bid
+  |> fun (cards, bid) -> cardCounts jsAreJokers cards, (cards, bid)
+  |> toHand
+
+let sum (hands: Hand seq) =
+  hands
+  |> Seq.sortWith sort
   |> Seq.indexed
   |> Seq.sumBy (fun (idx, hand) -> (idx + 1) * hand.Bid)
+
+let part1() =
+  readLines()
+  |> Seq.map (parseLine false)
+  |> sum
+
+let part2() =
+  readLines()
+  |> Seq.map (parseLine true)
+  |> sum
